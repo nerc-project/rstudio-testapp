@@ -1,0 +1,130 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: rstudio-server-template
+  annotations:
+    description: >
+      RStudio Server using a container image from the Rocker project (https://rocker-project.org).
+
+      To determine the user name to enter when logging into the RStudio Server web interface:
+      After launching, select the application in the Topology view, click "Actions > Edit Pod".
+      Copy the spec.securityContext.runAsUser value.
+    iconClass: "icon-redhat"
+    tags: "r"
+objects:
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: rstudio-server-config
+    labels:
+      app: rstudio-server
+  data:
+    database.conf: |
+      provider=sqlite
+      directory=/tmp
+  
+    logging.conf: |
+      [*]
+      log-level=info
+      logger-type=stderr
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: home
+    labels:
+      app: rstudio-server
+  spec:
+    accessModes:
+      - ReadWriteOnce 
+    resources:
+      requests:
+        storage: 8Gi 
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    name: rstudio-server
+    labels:
+      app: rstudio-server
+  spec:
+    volumes:
+    - name: home
+      emptyDir:
+        claimName: {}
+    - name: database-conf
+      configMap:
+        name: rstudio-server-config
+    - name: logging-conf
+      configMap:
+        name: rstudio-server-config
+    containers:
+    - name: rstudio-server
+      image: rocker/rstudio:4.2.2
+      resources:
+        requests:
+          memory: "640Mi"
+          cpu: "500m"
+        limits:
+          memory: "1000Mi"
+          cpu: "1024m"
+      volumeMounts:
+        - name: home
+          mountPath: /home/rstudio
+        - name: logging-conf
+          mountPath: /etc/rstudio/logging.conf
+          subPath: logging.conf
+        - name: database-conf
+          mountPath: /etc/rstudio/database.conf
+          subPath: database.conf
+      env:
+        - name: PASSWORD
+          value: ${PASSWORD}
+        - name: HOME
+          value: /home/rstudio
+        - name: RSTUDIO_SESSION_TIMEOUT
+          value: "0"
+      ports:
+      - containerPort: 8080
+      command:
+      - sh
+      - -c
+      - |
+        export USER=$(id -un)
+        rserver \
+          --www-port 8080 \
+          --auth-none=0 \
+          --auth-pam-helper-path=pam-helper \
+          --auth-stay-signed-in-days=30 \
+          --auth-timeout-minutes=0 \
+          --auth-validate-users=0 \
+          --server-user=${USER}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: rstudio-server
+    labels:
+      app: rstudio-server
+  spec:
+    ports:
+    - port: 8080
+    selector:
+      app: rstudio-server
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    name: rstudio-server
+    labels:
+      app: rstudio-server
+  spec:
+    # omitting host to randomly-generate a subdomain
+    #subdomain: rstudio-server
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+    to:
+      kind: Service
+      name: rstudio-server
+parameters:
+  - description: Password
+    from: '[\w]{20}'
+    generate: expression
+    name: PASSWORD
