@@ -14,9 +14,9 @@ metadata:
       To determine the user name to enter when logging into the RStudio Server web interface:
       After launching, select the application in the Topology view, click "Actions > Edit Pod".
       Copy the spec.securityContext.runAsUser value.
-    iconClass: fa fa-bar-chart
+    iconClass: icon-redhat
     openshift.io/display-name: RStudio server
-    openshift.io/documentation-url: https://github.com/nerc-project/rstudio-testapp
+    openshift.io/documentation-url: https://nerc-project.github.io/nerc-docs/other-tools/R/rstudio-server/running-rstudio-on-NERC/#running-rstudio-server-on-nerc-openshift
     openshift.io/long-description: R shiny server
     openshift.io/support-url: https://nerc.mghpcc.org/contact-us/
     tags: quickstart,r,rstudio,r-studio
