@@ -1,5 +1,10 @@
 apiVersion: template.openshift.io/v1
 kind: Template
+labels:
+  template: rstudio-server-template
+message: |-
+  The RStudio Server has been scheduled for creation in your project.
+  Building images takes some minutes to complete, so please be patient. You can follow progress on your projects overview page.
 metadata:
   name: rstudio-server-template
   annotations:
@@ -9,8 +14,12 @@ metadata:
       To determine the user name to enter when logging into the RStudio Server web interface:
       After launching, select the application in the Topology view, click "Actions > Edit Pod".
       Copy the spec.securityContext.runAsUser value.
-    iconClass: "icon-redhat"
-    tags: "r"
+    iconClass: fa fa-bar-chart
+    openshift.io/display-name: RStudio server
+    openshift.io/documentation-url: https://github.com/nerc-project/rstudio-testapp
+    openshift.io/long-description: R shiny server
+    openshift.io/support-url: https://nerc.mghpcc.org/contact-us/
+    tags: quickstart,r,rstudio,r-studio
 objects:
 - apiVersion: v1
   kind: ConfigMap
@@ -124,7 +133,8 @@ objects:
       kind: Service
       name: rstudio-server
 parameters:
-  - description: Password
+  - name: PASSWORD
+    description: Password for logging into RStudio
+    required: true
     from: '[\w]{20}'
     generate: expression
-    name: PASSWORD
